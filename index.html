@@ -5,170 +5,237 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TUN DEVELOPED SOFTWARE</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #0f0f1a, #1a1a2e); color: #00ffcc; padding: 20px; }
-        .container { max-width: 1000px; margin: auto; }
-        header { text-align: center; padding: 30px 0; border-bottom: 3px solid #00ffcc; }
-        h1 { font-size: 2.5rem; }
-        .banner { background: rgba(0,255,204,0.1); text-align:center; padding:60px 20px; border-radius:15px; margin:20px 0; }
-        .btn { background: #00ffcc; color:#000; border:none; padding:15px 30px; margin:10px; font-size:16px; font-weight:bold; border-radius:10px; cursor:pointer; }
-        .btn:hover { background:#00ccaa; transform:scale(1.05); }
-        .section { background:#16213e; padding:25px; margin:20px 0; border-radius:12px; border:1px solid #00ffcc33; }
-        input, select { width:100%; padding:14px; margin:10px 0; background:#0a0a14; border:2px solid #00ffcc; color:white; border-radius:8px; font-size:16px; }
-        .result { margin-top:15px; padding:15px; background:#0a0a14; border-radius:8px; min-height:60px; }
-        .history-item { background:#0f0f1a; padding:15px; margin:10px 0; border-radius:8px; border-left:4px solid #00ffcc; }
-        .copy-btn { background:#ffaa00; color:#000; padding:8px 15px; font-size:14px; }
+        :root {
+            --neon: #00ffcc;
+            --pink: #ff00aa;
+            --dark: #0a0a14;
+            --card: #16213e;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #0a0a14, #1a0033);
+            color: var(--neon);
+            background-image: 
+                linear-gradient(rgba(0,255,204,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,255,204,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container { max-width: 1100px; margin: auto; }
+        header {
+            text-align: center;
+            padding: 40px 0;
+            border-bottom: 4px solid var(--neon);
+            text-shadow: 0 0 20px var(--neon);
+        }
+        h1 { font-size: 3rem; letter-spacing: 3px; }
+        .banner {
+            background: rgba(255,0,170,0.1);
+            text-align: center;
+            padding: 50px 20px;
+            border-radius: 20px;
+            margin: 25px 0;
+            border: 2px solid var(--pink);
+            box-shadow: 0 0 30px rgba(255,0,170,0.3);
+        }
+        .section {
+            background: var(--card);
+            padding: 30px;
+            margin: 25px 0;
+            border-radius: 16px;
+            border: 2px solid rgba(0,255,204,0.2);
+            box-shadow: 0 0 25px rgba(0,255,204,0.1);
+        }
+        input, select {
+            width: 100%;
+            padding: 16px;
+            margin: 12px 0;
+            background: #0a0a14;
+            border: 2px solid var(--neon);
+            color: white;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        .btn {
+            background: linear-gradient(45deg, var(--neon), #00ccaa);
+            color: #000;
+            border: none;
+            padding: 16px 32px;
+            margin: 10px 5px;
+            font-weight: bold;
+            font-size: 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 0 20px var(--neon);
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 0 40px var(--pink);
+        }
+        .result, .history-item {
+            margin-top: 15px;
+            padding: 18px;
+            background: #0a0a14;
+            border-radius: 10px;
+            border-left: 5px solid var(--neon);
+        }
+        .copy-btn {
+            background: #ffaa00;
+            color: #000;
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+        .neon-text { text-shadow: 0 0 10px var(--neon), 0 0 20px var(--pink); }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>👉 TUN DEVELOPED SOFTWARE</h1>
-            <p>Phần mềm tối ưu game • Giảm lag • Ổn định mạng</p>
+            <h1 class="neon-text">👉 TUN DEVELOPED SOFTWARE</h1>
+            <p>Phần mềm tối ưu game • Giảm lag • Ổn định mạng • Bảo mật cao</p>
         </header>
 
         <div class="banner">
-            <h2>SIÊU PHẨM TỐI ƯU GAME – HIỆU SUẤT ĐỈNH CAO</h2>
-            <p>Tăng tốc độ mạng – Giảm ping</p>
+            <h2 class="neon-text">SIÊU PHẨM TỐI ƯU GAME – HIỆU SUẤT ĐỈNH CAO</h2>
         </div>
 
-        <!-- UID -->
+        <!-- UID Trả phí -->
         <div class="section">
-            <h2>🔐 Kích hoạt bằng UID (Trả phí)</h2>
+            <h2>🔐 Kích hoạt UID (Trả phí - 1 thiết bị)</h2>
             <input type="text" id="uid-input" placeholder="Nhập UID game">
-            <select id="device-select">
-                <option value="">Chọn thiết bị</option>
-                <option value="Android">Android</option>
-                <option value="iOS">iOS</option>
-                <option value="PC">PC</option>
+            <select id="uid-platform">
+                <option value="">Chọn nền tảng</option>
+                <option value="android">Android</option>
+                <option value="ios">iOS</option>
+                <option value="pc">PC</option>
             </select>
-            <button class="btn" onclick="checkUID()">XÁC NHẬN & KIỂM TRA</button>
+            <button class="btn" onclick="activateUID()">XÁC NHẬN UID</button>
             <div id="uid-result" class="result"></div>
         </div>
 
-        <!-- KEY Free -->
+        <!-- KEY Cá nhân (1 thiết bị) -->
         <div class="section">
-            <h2>🔑 Kích hoạt bằng KEY miễn phí (Cộng đồng)</h2>
-            <input type="text" id="key-input" placeholder="Nhập KEY cộng đồng">
-            <button class="btn" onclick="checkKey()">KÍCH HOẠT KEY</button>
-            <div id="key-result" class="result"></div>
+            <h2>🔑 KEY Cá nhân (1 thiết bị - Full)</h2>
+            <input type="text" id="personal-key" placeholder="Nhập KEY cá nhân">
+            <select id="personal-platform">
+                <option value="">Chọn nền tảng</option>
+                <option value="android">Android Full</option>
+                <option value="ios">iOS Full</option>
+                <option value="pc">PC Full</option>
+            </select>
+            <button class="btn" onclick="activatePersonalKey()">KÍCH HOẠT KEY CÁ NHÂN</button>
+            <div id="personal-result" class="result"></div>
         </div>
 
-        <!-- LỊCH SỬ (mới) -->
+        <!-- KEY Cộng đồng -->
+        <div class="section">
+            <h2>🔑 KEY Cộng đồng (Free)</h2>
+            <input type="text" id="community-key" placeholder="Nhập KEY cộng đồng">
+            <button class="btn" onclick="activateCommunityKey()">KÍCH HOẠT KEY CỘNG ĐỒNG</button>
+            <div id="community-result" class="result"></div>
+        </div>
+
+        <!-- Lịch sử & Link tải -->
         <div class="section">
             <h2>📜 Lịch sử kích hoạt & Link tải</h2>
             <div id="history-list"></div>
-            <button class="btn" onclick="clearHistory()" style="background:#ff5555;">Xóa lịch sử</button>
+            <button class="btn" onclick="clearHistory()" style="background:#ff5555; margin-top:15px;">Xóa toàn bộ lịch sử</button>
         </div>
     </div>
 
     <script>
-        // ================== LINK CONFIG.JSON (bên ngoài) ==================
         const CONFIG_URL = "https://raw.githubusercontent.com/AdminTunDeveloped/AdminTunDeveloped/main/config.json";
-
         let CONFIG = {};
 
-        // Load config.json từ GitHub
         async function loadConfig() {
             try {
                 const res = await fetch(CONFIG_URL + "?t=" + Date.now());
                 CONFIG = await res.json();
-                console.log("✅ Đã load config.json thành công");
-            } catch (e) {
-                console.error("Không tải được config.json");
-            }
+            } catch(e) { console.log("Không load config"); }
         }
 
-        // Lưu lịch sử (dùng localStorage)
         let history = JSON.parse(localStorage.getItem("tun_history")) || [];
 
-        function saveHistory(item) {
+        function saveToHistory(type, id, platform, link) {
+            const item = {
+                type: type,
+                id: id,
+                platform: platform,
+                time: new Date().toLocaleString("vi-VN"),
+                link: link
+            };
             history.unshift(item);
-            if (history.length > 20) history.length = 20; // giữ tối đa 20
+            if (history.length > 30) history.length = 30;
             localStorage.setItem("tun_history", JSON.stringify(history));
             renderHistory();
         }
 
         function renderHistory() {
             const list = document.getElementById("history-list");
-            list.innerHTML = history.length === 0 
-                ? "<p>Chưa có lịch sử kích hoạt nào.</p>"
-                : history.map((h, i) => `
-                    <div class="history-item">
-                        <strong>${h.type}</strong> • ${h.time}<br>
-                        <small>UID/KEY: ${h.id} | Nền tảng: ${h.platform}</small><br>
-                        <button class="btn copy-btn" onclick="copyLink('${h.link}')">📋 Sao chép link tải</button>
-                    </div>
-                `).join("");
+            if (history.length === 0) {
+                list.innerHTML = "<p>Chưa có lịch sử kích hoạt nào.</p>";
+                return;
+            }
+            list.innerHTML = history.map(h => `
+                <div class="history-item">
+                    <strong>${h.type}</strong> — ${h.time}<br>
+                    <small>${h.id} | ${h.platform}</small><br><br>
+                    <button class="btn copy-btn" onclick="copyLink('${h.link}')">📋 Sao chép link tải</button>
+                </div>
+            `).join("");
         }
 
         function copyLink(link) {
-            navigator.clipboard.writeText(link).then(() => {
-                alert("✅ Đã sao chép link vào clipboard!");
-            });
+            if (link === "#") return alert("Link chưa được thiết lập!");
+            navigator.clipboard.writeText(link);
+            alert("✅ Đã sao chép link tải!");
         }
 
         function clearHistory() {
-            if (confirm("Xóa toàn bộ lịch sử?")) {
+            if (confirm("Xóa hết lịch sử?")) {
                 history = [];
                 localStorage.removeItem("tun_history");
                 renderHistory();
             }
         }
 
-        // Kiểm tra UID
-        async function checkUID() {
+        // ================== KÍCH HOẠT ==================
+        async function activateUID() {
             const uid = document.getElementById("uid-input").value.trim();
-            const platform = document.getElementById("device-select").value;
+            const plat = document.getElementById("uid-platform").value;
             const result = document.getElementById("uid-result");
 
-            if (!uid || !platform) {
-                result.innerHTML = `<p style="color:#ff5555">❌ Vui lòng nhập UID và chọn nền tảng!</p>`;
-                return;
-            }
+            if (!uid || !plat) return result.innerHTML = `<p style="color:#ff5555">❌ Nhập UID và chọn nền tảng!</p>`;
 
-            const link = CONFIG.scripts?.[`${platform.toLowerCase()}_full`] || "#";
-            
-            result.innerHTML = `
-                <p style="color:lime">✅ UID hợp lệ! Kích hoạt thành công.</p>
-                <p>Nền tảng: ${platform}</p>
-                <p style="color:#ffaa00">Link tải đã được lưu vào LỊCH SỬ</p>
-            `;
-
-            // Lưu vào lịch sử
-            saveHistory({
-                type: "UID - Bản Full",
-                id: uid,
-                platform: platform,
-                time: new Date().toLocaleString("vi-VN"),
-                link: link
-            });
+            const link = CONFIG.scripts?.[`${plat}_full`] || "#";
+            result.innerHTML = `<p style="color:lime">✅ UID hợp lệ! Bản Full đã lưu vào lịch sử.</p>`;
+            saveToHistory("UID Trả phí", uid, plat.toUpperCase(), link);
         }
 
-        // Kiểm tra KEY
-        async function checkKey() {
-            const key = document.getElementById("key-input").value.trim();
-            const result = document.getElementById("key-result");
+        async function activatePersonalKey() {
+            const key = document.getElementById("personal-key").value.trim();
+            const plat = document.getElementById("personal-platform").value;
+            const result = document.getElementById("personal-result");
 
-            if (!key) {
-                result.innerHTML = `<p style="color:#ff5555">❌ Vui lòng nhập KEY!</p>`;
-                return;
-            }
+            if (!key || !plat) return result.innerHTML = `<p style="color:#ff5555">❌ Nhập KEY và chọn nền tảng!</p>`;
 
-            const link = CONFIG.scripts?.android_free || "#"; // mặc định Android free, bạn có thể chỉnh sau
+            const link = CONFIG.scripts?.[`${plat}_full`] || "#";
+            result.innerHTML = `<p style="color:lime">✅ KEY Cá nhân hợp lệ! Bản Full đã lưu.</p>`;
+            saveToHistory("KEY Cá nhân (1 thiết bị)", key, plat.toUpperCase(), link);
+        }
 
-            result.innerHTML = `
-                <p style="color:lime">🎉 KEY hợp lệ! Kích hoạt bản miễn phí.</p>
-                <p style="color:#ffaa00">Link tải đã được lưu vào LỊCH SỬ</p>
-            `;
+        async function activateCommunityKey() {
+            const key = document.getElementById("community-key").value.trim();
+            const result = document.getElementById("community-result");
 
-            saveHistory({
-                type: "KEY - Bản Free",
-                id: key,
-                platform: "Android", // bạn có thể cho chọn platform sau
-                time: new Date().toLocaleString("vi-VN"),
-                link: link
-            });
+            if (!key) return result.innerHTML = `<p style="color:#ff5555">❌ Nhập KEY cộng đồng!</p>`;
+
+            const link = CONFIG.scripts?.android_free || "#";   // mặc định Android free, bạn chỉnh sau
+            result.innerHTML = `<p style="color:lime">🎉 KEY Cộng đồng hợp lệ! Bản Free đã lưu.</p>`;
+            saveToHistory("KEY Cộng đồng", key, "Free", link);
         }
 
         // Khởi chạy
