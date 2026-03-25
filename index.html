@@ -268,16 +268,22 @@ const KEY_URL="https://raw.githubusercontent.com/AdminTunDeveloped/TunDev/main/k
 
 let CONFIG={scripts:{}};
 let KEY_DATA={personal_keys:[],community_keys:[]};
-let history=JSON.parse(localStorage.getItem("tun_history"))||[];
+let LOADED=false;
 
 async function load(){
 try{
-let c=await fetch(CONFIG_URL+"?t="+Date.now());
-if(c.ok) CONFIG=await c.json();
+let c=await fetch(CONFIG_URL);
+CONFIG=await c.json();
 
-let k=await fetch(KEY_URL+"?t="+Date.now());
-if(k.ok) KEY_DATA=await k.json();
-}catch(e){}
+let k=await fetch(KEY_URL);
+KEY_DATA=await k.json();
+
+LOADED=true;
+console.log("✅ LOAD OK", CONFIG, KEY_DATA);
+
+}catch(e){
+console.log("❌ LOAD FAIL", e);
+}
 }
 
 function showError(msg){
@@ -285,14 +291,11 @@ document.getElementById("result").innerHTML="<div class='error'>"+msg+"</div>";
 }
 
 function showLink(type,link){
-if(!link) return showError("Lỗi config");
-
 document.getElementById("result").innerHTML=`
 <div class="success">${type}
 <div class="linkbox">
 <input value="${link}" readonly>
-<button class="copy" onclick="copy('${link}')">COPY</button>
-<button class="copy" onclick="download('${link}')">TẢI</button>
+<button onclick="copy('${link}')">COPY</button>
 </div>
 </div>`;
 }
@@ -302,57 +305,42 @@ navigator.clipboard.writeText(t);
 alert("Đã copy");
 }
 
-function download(l){
-window.location.href=l;
-}
-
-function save(type,link){
-history.unshift({type,link,time:new Date().toLocaleTimeString()});
-if(history.length>10)history.length=10;
-localStorage.setItem("tun_history",JSON.stringify(history));
-render();
-}
-
-function render(){
-let h=document.getElementById("history");
-
-if(history.length===0){
-h.innerHTML="📜 Chưa có lịch sử";
-return;
-}
-
-h.innerHTML="<b>📜 Lịch sử:</b>"+history.map(i=>`
-<div>
-${i.type} • ${i.time}<br>
-<button class="copy" onclick="copy('${i.link}')">COPY</button>
-</div>
-`).join("");
-}
-
 function vip(){
+
+if(!LOADED) return showError("⏳ Đang load dữ liệu...");
+
 let k=document.getElementById("vip-key").value.trim();
-if(!k) return showError("Nhập key");
+if(!k) return showError("❌ Nhập key");
 
-let list=KEY_DATA.personal_keys.map(x=>x.key.trim());
-if(!list.includes(k)) return showError("Key VIP sai");
+let obj=KEY_DATA.personal_keys.find(x=>x.key===k);
 
-let obj=KEY_DATA.personal_keys.find(x=>x.key.trim()===k);
+if(!obj){
+console.log("KEY_DATA:", KEY_DATA);
+return showError("❌ Key VIP sai");
+}
 
-let link=CONFIG.scripts[(obj.platform||"android")+"_full"];
-save("VIP",link);
-showLink("💎 Thành công",link);
+let link=CONFIG.scripts[obj.platform+"_full"];
+
+if(!link) return showError("❌ Config lỗi");
+
+showLink("💎 VIP OK",link);
 }
 
 function freeKey(){
-let k=document.getElementById("free-key").value.trim();
-if(!k) return showError("Nhập key");
 
-let list=KEY_DATA.community_keys.map(x=>x.trim());
-if(!list.includes(k)) return showError("Key Free sai");
+if(!LOADED) return showError("⏳ Đang load dữ liệu...");
+
+let k=document.getElementById("free-key").value.trim();
+if(!k) return showError("❌ Nhập key");
+
+if(!KEY_DATA.community_keys.includes(k)){
+console.log("FREE LIST:", KEY_DATA.community_keys);
+return showError("❌ Key free sai");
+}
 
 let link=CONFIG.scripts.android_free;
-save("FREE",link);
-showLink("🎁 Thành công",link);
+
+showLink("🎁 FREE OK",link);
 }
 
 function toggleContact(){
@@ -360,9 +348,5 @@ document.getElementById("contact-menu").classList.toggle("show");
 }
 
 load();
-render();
 
 </script>
-
-</body>
-</html>
