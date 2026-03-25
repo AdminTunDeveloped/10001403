@@ -46,6 +46,12 @@ animation:rainbow 6s linear infinite
 100%{background-position:400%}
 }
 
+.tag{
+font-size:12px;
+color:#94a3b8;
+margin-top:5px
+}
+
 .box{
 margin-top:15px;
 padding:15px;
@@ -129,6 +135,54 @@ border:1px solid #1e293b;
 font-size:12px;
 text-align:left;
 }
+
+/* FLOAT BUTTON */
+.fab{
+position:fixed;
+bottom:20px;
+right:20px;
+width:55px;
+height:55px;
+border-radius:50%;
+background:#00ffcc;
+color:black;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:22px;
+cursor:pointer;
+box-shadow:0 0 20px #00ffcc;
+z-index:999;
+}
+
+.contact-menu{
+position:fixed;
+bottom:90px;
+right:20px;
+display:flex;
+flex-direction:column;
+gap:10px;
+opacity:0;
+pointer-events:none;
+transform:translateY(20px);
+transition:0.3s;
+}
+
+.contact-menu a{
+background:#020617;
+padding:10px;
+border-radius:10px;
+color:white;
+text-decoration:none;
+font-size:13px;
+border:1px solid #1e293b;
+}
+
+.contact-menu.show{
+opacity:1;
+pointer-events:auto;
+transform:translateY(0);
+}
 </style>
 </head>
 
@@ -138,13 +192,16 @@ text-align:left;
 <div class="card">
 
 <div class="title">TUN DEVELOPED</div>
+<div class="tag">🟢 Server Online • 🔐 Bảo mật • ⚡ Ổn định</div>
 
+<!-- VIP -->
 <div class="box">
 <h3>💎 KEY VIP</h3>
 <input id="vip-key" placeholder="Nhập KEY VIP">
 <button class="rgb-btn" onclick="vip()">Kích hoạt VIP</button>
 </div>
 
+<!-- FREE -->
 <div class="box">
 <h3>🎁 KEY FREE</h3>
 <input id="free-key" placeholder="Nhập KEY FREE">
@@ -156,29 +213,35 @@ text-align:left;
 
 </div>
 </div>
+
+<!-- CONTACT -->
+<div class="fab" onclick="toggleContact()">☰</div>
+
+<div id="contact-menu" class="contact-menu">
+<a href="https://zalo.me/0378099746" target="_blank">💬 Zalo</a>
+<a href="https://t.me/TunDeveloped" target="_blank">📢 Telegram</a>
+<a href="https://facebook.com/" target="_blank">📘 Facebook</a>
+</div>
+
 <script>
 
-const CONFIG_URL="https://raw.githubusercontent.com/AdminTunDeveloped/10001403/main/config.json";
-const KEY_URL="https://raw.githubusercontent.com/AdminTunDeveloped/10001403/main/key.json";
+const CONFIG_URL="https://raw.githubusercontent.com/AdminTunDeveloped/REPO/main/config.json";
+const KEY_URL="https://raw.githubusercontent.com/AdminTunDeveloped/REPO/main/key.json";
 
 let CONFIG={scripts:{}};
 let KEY_DATA={personal_keys:[],community_keys:[]};
-
 let history=JSON.parse(localStorage.getItem("tun_history"))||[];
 
 async function load(){
-
 try{
 let c=await fetch(CONFIG_URL+"?t="+Date.now());
 if(c.ok) CONFIG=await c.json();
 
 let k=await fetch(KEY_URL+"?t="+Date.now());
 if(k.ok) KEY_DATA=await k.json();
-
 }catch(e){
-console.log("Load lỗi nhưng vẫn cho chạy");
+console.log("Load lỗi");
 }
-
 }
 
 function showError(msg){
@@ -186,10 +249,7 @@ document.getElementById("result").innerHTML="<div class='error'>"+msg+"</div>";
 }
 
 function showLink(type,link){
-
-if(!link){
-return showError("❌ Không có link (config lỗi)");
-}
+if(!link) return showError("❌ Lỗi config");
 
 document.getElementById("result").innerHTML=`
 <div class="success">${type}
@@ -236,37 +296,37 @@ ${i.type} • ${i.time}<br>
 }
 
 function vip(){
-
 let k=document.getElementById("vip-key").value.trim();
-
 if(!k) return showError("❌ Nhập key");
 
 let f=KEY_DATA.personal_keys.find(x=>x.key===k);
-
-if(!f) return showError("❌ Key VIP sai hoặc chưa load");
+if(!f) return showError("❌ Key VIP sai");
 
 let link=CONFIG.scripts[f.platform+"_full"];
-
 save("💎 VIP",link);
 showLink("💎 Thành công",link);
 }
 
 function freeKey(){
-
 let k=document.getElementById("free-key").value.trim();
-
 if(!k) return showError("❌ Nhập key");
 
 if(!KEY_DATA.community_keys.includes(k))
-return showError("❌ Key free sai hoặc chưa load");
+return showError("❌ Key Free sai");
 
 let link=CONFIG.scripts.android_free;
-
 save("🎁 FREE",link);
 showLink("🎁 Thành công",link);
+}
+
+function toggleContact(){
+document.getElementById("contact-menu").classList.toggle("show");
 }
 
 load();
 render();
 
 </script>
+
+</body>
+</html>
