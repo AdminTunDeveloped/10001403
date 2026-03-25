@@ -1,8 +1,10 @@
-const CONFIG = {
-    softwareName: "TUN Game Optimizer",
-    version: "v2.1.3",
-    updateDate: "25/03/2026",
-    downloadAndroid: "#", // Thay bằng link tải thật sau
-    downloadIOS: "#",
-    githubRaw: "https://raw.githubusercontent.com/YOUR_USERNAME/TUN-DEVELOPED-SOFTWARE/main/data/"
-};
+{
+  "scripts": {
+    "android_full": "https://github.com/AdminTunDeveloped/AdminTunDeveloped/releases/download/full-v2.1.3/TUN_Optimizer_Full_Android.apk",
+    "android_free": "https://github.com/AdminTunDeveloped/AdminTunDeveloped/releases/download/free-v2.1.3/TUN_Optimizer_Free_Android.apk",
+    "ios_full": "https://github.com/AdminTunDeveloped/AdminTunDeveloped/releases/download/full-v2.1.3/TUN_Optimizer_Full_iOS.ipa",
+    "ios_free": "https://github.com/AdminTunDeveloped/AdminTunDeveloped/releases/download/free-v2.1.3/TUN_Optimizer_Free_iOS.ipa",
+    "pc_full": "https://github.com/AdminTunDeveloped/AdminTunDeveloped/releases/download/full-v2.1.3/TUN_Optimizer_Full_PC.exe",
+    "pc_free": "https://github.com/AdminTunDeveloped/AdminTunDeveloped/releases/download/free-v2.1.3/TUN_Optimizer_Free_PC.exe"
+  }
+}
