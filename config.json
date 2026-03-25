@@ -4,8 +4,8 @@
     "ios_full": "...ipa",
     "pc_full": "...exe",
 
-    "android_free": "...apk",
-    "ios_free": "...ipa",
-    "pc_free": "...exe"
+    "android_free": "...free",
+    "ios_free": "...free",
+    "pc_free": "...free"
   }
 }
