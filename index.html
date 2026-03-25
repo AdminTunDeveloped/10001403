@@ -34,9 +34,16 @@ text-align:center;
 font-family:Bebas Neue;
 font-size:38px;
 letter-spacing:3px;
-background:linear-gradient(90deg,#ff0000,#00ffd5,#7a00ff);
+background:linear-gradient(90deg,#ff0000,#ff7300,#fffb00,#48ff00,#00ffd5,#002bff,#7a00ff,#ff00c8);
+background-size:400%;
 -webkit-background-clip:text;
 -webkit-text-fill-color:transparent;
+animation:rainbow 6s linear infinite;
+}
+
+@keyframes rainbow{
+0%{background-position:0}
+100%{background-position:400%}
 }
 
 .tag{
@@ -111,14 +118,6 @@ animation:rgb 6s linear infinite
 .success{color:#22c55e}
 .error{color:#ef4444}
 
-.linkbox{
-margin-top:8px;
-padding:8px;
-background:#000;
-border-radius:8px;
-border:1px solid #1e293b;
-}
-
 .history{
 margin-top:12px;
 padding:10px;
@@ -131,8 +130,15 @@ text-align:left;
 
 .history-item{
 margin-top:6px;
-padding:6px;
-border-bottom:1px solid #1e293b;
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:6px;
+}
+
+.clear{
+margin-top:10px;
+background:#111;
 }
 
 .fab{
@@ -209,7 +215,7 @@ z-index:-1;
 <div class="tag">
 <span>🟢 Server Online</span>
 <span>🔐 Bảo mật</span>
-<span>🚀 Hiệu suất cao</span>
+<span>🚀 Hiệu suất</span>
 </div>
 
 <div class="box">
@@ -225,7 +231,9 @@ z-index:-1;
 </div>
 
 <div id="result" class="result"></div>
+
 <div id="history" class="history"></div>
+<button class="rgb-btn clear" onclick="clearHis()">🗑 Xóa lịch sử</button>
 
 </div>
 </div>
@@ -247,8 +255,12 @@ let CONFIG={},KEY_DATA={};
 let history=JSON.parse(localStorage.getItem("his"))||[];
 
 async function load(){
+try{
 CONFIG=await (await fetch(CONFIG_URL)).json();
 KEY_DATA=await (await fetch(KEY_URL)).json();
+}catch(e){
+console.log("Lỗi load");
+}
 }
 
 function save(type,link){
@@ -260,13 +272,18 @@ render();
 
 function render(){
 let h=document.getElementById("history");
-if(history.length==0){h.innerHTML="📜 Chưa có lịch sử";return;}
 
-h.innerHTML="<b>📜 Lịch sử:</b>"+history.map((i,idx)=>`
+if(history.length==0){
+h.innerHTML="📜 Chưa có lịch sử";
+return;
+}
+
+h.innerHTML="<b>📜 Lịch sử:</b>"+history.map(i=>`
 <div class="history-item">
-${i.type}
+<span>${i.type}</span>
 <button class="rgb-btn" onclick="copy('${i.link}')">COPY</button>
-</div>`).join("");
+</div>
+`).join("");
 }
 
 function copy(t){
@@ -274,37 +291,42 @@ navigator.clipboard.writeText(t);
 alert("Đã copy link");
 }
 
-function show(type,link){
-document.getElementById("result").innerHTML=`
-<div class="success">${type}
-<div class="linkbox">
-<input value="${link}" readonly>
-<button class="rgb-btn" onclick="copy('${link}')">COPY</button>
-</div>
-</div>`;
-}
-
 function vip(){
 let k=document.getElementById("vip").value.trim();
-let obj=KEY_DATA.personal_keys.find(x=>x.key==k);
-if(!obj) return err("Key sai");
+let obj=KEY_DATA.personal_keys?.find(x=>x.key.trim()===k);
 
-let link=CONFIG.scripts[obj.platform+"_full"];
+if(!obj) return err("❌ Key VIP sai");
+
+let link=CONFIG.scripts?.[(obj.platform||"android")+"_full"];
+
 save("💎 VIP",link);
-show("Kích hoạt VIP thành công",link);
+ok("✔ VIP kích hoạt thành công");
 }
 
 function freeKey(){
 let k=document.getElementById("free").value.trim();
-if(!KEY_DATA.community_keys.includes(k)) return err("Key sai");
 
-let link=CONFIG.scripts.android_free;
+if(!KEY_DATA.community_keys?.includes(k))
+return err("❌ Key FREE sai");
+
+let link=CONFIG.scripts?.android_free;
+
 save("🎁 FREE",link);
-show("Nhận FREE thành công",link);
+ok("✔ Nhận FREE thành công");
 }
 
 function err(t){
 document.getElementById("result").innerHTML="<div class='error'>"+t+"</div>";
+}
+
+function ok(t){
+document.getElementById("result").innerHTML="<div class='success'>"+t+"</div>";
+}
+
+function clearHis(){
+history=[];
+localStorage.removeItem("his");
+render();
 }
 
 function toggle(){
