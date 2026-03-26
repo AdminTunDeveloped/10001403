@@ -1,349 +1,621 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TUN DEVELOPED</title>
+# TunDeveloped 
+[General]
+always-real-ip = com.dts.freefireth,com.dts.freefiremax
+dns-server = com.dts.freefireth,com.dts.freefiremax
+private-ip-answer = true
+prefer-ipv6 = false
+ipv6 = false
 
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@600&family=Inter&display=swap" rel="stylesheet">
+[Script]
+using UnityEngine;
 
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
+public class MobileAimHybridUltimate : MonoBehaviour
+{
+    /* ================= EXTERNAL INPUT ================= */
+    public bool isADS = false;
+    public float targetDistance = 10f;     // gán từ game
+    public int targetID = -1;              // ID mục tiêu hiện tại
 
-body{
-font-family:Inter;
-background:#000;
-color:#fff;
-display:flex;
-justify-content:center;
-align-items:center;
-min-height:100vh;
+    /* ================= INTERNAL ================= */
+    int lastTargetID = -1;
+    float hitLockTimer = 0f;
+
+    /* ================= FPS ================= */
+    public float referenceFPS = 60f;
+    public float maxFPS = 165f;
+    float fpsScale = 1f;
+
+    /* ================= DEADZONE ================= */
+    public float microDeadZone = 0.07f;
+
+    /* ================= SENS ================= */
+    public float baseSensitivity = 3.7f;
+    public float dynamicBoost = 5.8f;
+    public float maxSensitivity = 105f;
+
+    // ❗ KHÔNG HÚT – KHÔNG > 1
+    public AnimationCurve responseCurve = new AnimationCurve(
+        new Keyframe(0f, 0f),
+        new Keyframe(0.4f, 0.45f),
+        new Keyframe(0.7f, 0.75f),
+        new Keyframe(1f, 1f)
+    );
+
+    /* ================= AXIS ================= */
+    public float verticalBiasHip = 7.4f;
+    public float verticalBiasADS = 10.2f;
+    public float horizontalBias = 0.65f;
+
+    /* ================= DISTANCE HEAD CLAMP ================= */
+    public float closeRange = 5f;
+    public float midRange = 15f;
+    public float closeClamp = 0.30f;
+    public float midClamp = 0.40f;
+    public float farClamp = 0.55f;
+
+    /* ================= HIT LOCK ================= */
+    public float hitLockTime = 0.12f; // khóa sau khi trúng head
+
+    /* ================= DAMPING ================= */
+    public float hipDamping = 0.99f;
+    public float adsDamping = 0.997f;
+    public float headLockDamping = 0.999f;
+
+    public float inertia = 0.97f;
+    public float friction = 0.04f;
+
+    /* ================= LIMIT ================= */
+    public float maxStep = 5.0f;
+    public float minPitch = -80f;
+    public float maxPitch = 80f;
+
+    Vector2 filtered;
+    Vector2 velocity;
+    float pitch;
+
+    /* ================= FPS ================= */
+    void UpdateFPS()
+    {
+        float fps = Mathf.Clamp(
+            1f / Mathf.Max(Time.unscaledDeltaTime, 0.0001f),
+            referenceFPS,
+            maxFPS
+        );
+        fpsScale = fps / referenceFPS;
+    }
+
+    /* ================= CALLED BY GAME ================= */
+    public void OnHeadHit()
+    {
+        hitLockTimer = hitLockTime;
+    }
+
+    /* ================= MAIN ================= */
+    public void Aim(Vector2 joy)
+    {
+        UpdateFPS();
+
+        /* ===== RESET LOCK KHI ĐỔI MỤC TIÊU ===== */
+        if (targetID != lastTargetID)
+        {
+            hitLockTimer = 0f;
+            velocity = Vector2.zero;
+            filtered = Vector2.zero;
+            lastTargetID = targetID;
+        }
+
+        if (hitLockTimer > 0f)
+            hitLockTimer -= Time.deltaTime;
+
+        /* ===== DEADZONE ===== */
+        joy.x = Mathf.Abs(joy.x) < microDeadZone ? 0 : joy.x;
+        joy.y = Mathf.Abs(joy.y) < microDeadZone ? 0 : joy.y;
+
+        float mag = Mathf.Clamp01(joy.magnitude);
+        Vector2 dir = mag > 0 ? joy.normalized : Vector2.zero;
+
+        float curve = responseCurve.Evaluate(mag);
+
+        float sens = Mathf.Lerp(
+            baseSensitivity,
+            maxSensitivity,
+            curve * dynamicBoost / 10f
+        );
+
+        Vector2 input =
+            dir * curve * sens * Time.deltaTime * fpsScale;
+
+        /* ===== AXIS (KHÔNG HÚT) ===== */
+        input.x *= horizontalBias;
+        input.y *= (isADS ? verticalBiasADS : verticalBiasHip);
+
+        /* ===== TRUE CLAMP THEO KHOẢNG CÁCH ===== */
+        float clampY =
+            targetDistance <= closeRange ? closeClamp :
+            targetDistance <= midRange ? midClamp :
+            farClamp;
+
+        if (isADS)
+            input.y = Mathf.Clamp(input.y, -clampY, clampY);
+
+        /* ===== SAU KHI TRÚNG HEAD: CHỈ GIỮ – KHÔNG KÉO ===== */
+        if (hitLockTimer > 0f)
+            input.y = Mathf.Clamp(input.y, -clampY * 0.35f, clampY * 0.35f);
+
+        float damping = isADS ? adsDamping : hipDamping;
+        if (hitLockTimer > 0f)
+            damping = headLockDamping;
+
+        /* ===== FILTER ===== */
+        filtered = Vector2.Lerp(filtered, input, 24f * Time.deltaTime);
+
+        velocity = Vector2.Lerp(velocity, filtered, inertia);
+        velocity *= (1f - friction);
+        velocity *= damping;
+
+        velocity = Vector2.ClampMagnitude(velocity, maxStep);
+
+        /* ===== APPLY ===== */
+        pitch -= velocity.y;
+        pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
+
+        transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+
+        if (transform.parent != null)
+            transform.parent.Rotate(Vector3.up * velocity.x);
+        else
+            transform.Rotate(Vector3.up * velocity.x, Space.World);
+    }
 }
 
-.main{width:100%;max-width:420px;padding:20px}
-
-.card{
-background:#020617;
-border-radius:16px;
-padding:20px;
-box-shadow:0 0 30px rgba(0,255,150,0.2);
-text-align:center;
-}
-
-.title{
-font-family:Bebas Neue;
-font-size:38px;
-letter-spacing:3px;
-background:linear-gradient(90deg,#ff0000,#ff7300,#fffb00,#48ff00,#00ffd5,#002bff,#7a00ff,#ff00c8);
-background-size:400%;
--webkit-background-clip:text;
--webkit-text-fill-color:transparent;
-animation:rainbow 6s linear infinite;
-}
-
-@keyframes rainbow{
-0%{background-position:0}
-100%{background-position:400%}
-}
-
-.tag{
-margin-top:8px;
-display:flex;
-flex-wrap:wrap;
-justify-content:center;
-gap:6px;
-}
-
-.tag span{
-font-size:11px;
-background:#020617;
-padding:5px 8px;
-border-radius:8px;
-border:1px solid #1e293b;
-color:#94a3b8;
-}
-
-.box{
-margin-top:15px;
-padding:14px;
-border-radius:12px;
-background:#020617;
-border:1px solid #1e293b;
-text-align:left;
-}
-
-.box h3{font-size:13px;color:#22c55e;margin-bottom:6px}
-
-input{
-width:100%;
-padding:11px;
-border-radius:8px;
-border:1px solid #1e293b;
-background:#000;
-color:white;
-font-size:13px
-}
-
-.rgb-btn{
-margin-top:10px;
-width:100%;
-padding:11px;
-border-radius:8px;
-border:none;
-background:#000;
-color:white;
-font-family:Montserrat;
-cursor:pointer;
-position:relative;
-z-index:1;
-}
-
-.rgb-btn:before{
-content:"";
-position:absolute;
-top:-2px;left:-2px;right:-2px;bottom:-2px;
-border-radius:10px;
-background:linear-gradient(45deg,#ff0000,#ff7300,#fffb00,#48ff00,#00ffd5,#002bff,#7a00ff,#ff00c8);
-background-size:400%;
-z-index:-1;
-animation:rgb 6s linear infinite
-}
-
-@keyframes rgb{
-0%{background-position:0}
-100%{background-position:400%}
-}
-
-.result{margin-top:12px;font-size:13px}
-.success{color:#22c55e}
-.error{color:#ef4444}
-
-.history{
-margin-top:12px;
-padding:10px;
-border-radius:10px;
-background:#020617;
-border:1px solid #1e293b;
-font-size:12px;
-text-align:left;
-}
-
-.history-item{
-margin-top:6px;
-display:flex;
-justify-content:space-between;
-align-items:center;
-gap:6px;
-}
-
-.clear{
-margin-top:10px;
-}
-
-.fab{
-position:fixed;
-bottom:90px;
-right:18px;
-width:48px;
-height:48px;
-border-radius:50%;
-background:#000;
-display:flex;
-align-items:center;
-justify-content:center;
-cursor:pointer;
-z-index:999;
-}
-
-.fab:before{
-content:"";
-position:absolute;
-top:-2px;left:-2px;right:-2px;bottom:-2px;
-border-radius:50%;
-background:linear-gradient(45deg,#ff0000,#00ffd5,#7a00ff);
-background-size:400%;
-animation:rgb 6s linear infinite;
-z-index:-1;
-}
-
-.menu{
-position:fixed;
-bottom:150px;
-right:18px;
-display:flex;
-flex-direction:column;
-gap:10px;
-opacity:0;
-pointer-events:none;
-transform:translateY(10px);
-transition:0.25s;
-z-index:999;
-}
-
-.menu a{
-width:150px;
-padding:10px;
-border-radius:10px;
-background:#000;
-color:white;
-text-align:center;
-font-size:13px;
-text-decoration:none;
-font-family:Montserrat;
-position:relative;
-}
-
-.menu a:before{
-content:"";
-position:absolute;
-top:-2px;left:-2px;right:-2px;bottom:-2px;
-border-radius:12px;
-background:linear-gradient(45deg,#ff0000,#ff7300,#fffb00,#48ff00,#00ffd5,#002bff,#7a00ff,#ff00c8);
-background-size:400%;
-animation:rgb 6s linear infinite;
-z-index:-1;
-}
-
-.menu.show{
-opacity:1;
-pointer-events:auto;
-transform:translateY(0);
-}
-</style>
-</head>
-
-<body>
-
-<div class="main">
-<div class="card">
-
-<div class="title">TUN DEVELOPED</div>
-
-<div class="tag">
-<span>🟢 Server Online</span>
-<span>🔐 Bảo mật</span>
-<span>🚀 Hiệu suất cao</span>
-</div>
-
-<div class="box">
-<h3>💎 KEY VIP</h3>
-<input id="vip" placeholder="Nhập KEY VIP">
-<button class="rgb-btn" onclick="vip()">Kích hoạt</button>
-</div>
-
-<div class="box">
-<h3>🎁 KEY FREE</h3>
-<input id="free" placeholder="Nhập KEY FREE">
-<button class="rgb-btn" onclick="freeKey()">Nhận Free</button>
-</div>
-
-<div id="result" class="result"></div>
-
-<div id="history" class="history"></div>
-<button class="rgb-btn clear" onclick="clearHis()">🗑 Xóa lịch sử</button>
-
-</div>
-</div>
-
-<div class="fab" onclick="toggle()">💬</div>
-
-<div id="menu" class="menu">
-<a href="https://zalo.me/0378099746" target="_blank">💬 Zalo</a>
-<a href="https://t.me/TunDeveloped" target="_blank">📢 Telegram</a>
-<a href="#">🌐 Facebook</a>
-</div>
-
-<script>
-
-const CONFIG_URL="https://raw.githubusercontent.com/AdminTunDeveloped/TunDev/main/config.json";
-const KEY_URL="https://raw.githubusercontent.com/AdminTunDeveloped/TunDev/main/key.json";
-
-let CONFIG={},KEY_DATA={};
-let history=JSON.parse(localStorage.getItem("his"))||[];
-
-async function load(){
-try{
-CONFIG=await (await fetch(CONFIG_URL+"?t="+Date.now())).json();
-KEY_DATA=await (await fetch(KEY_URL+"?t="+Date.now())).json();
-}catch(e){
-console.log("Lỗi load JSON");
-}
-}
-
-function save(type,link){
-history.unshift({type,link});
-if(history.length>10)history.length=10;
-localStorage.setItem("his",JSON.stringify(history));
-render();
-}
-
-function render(){
-let h=document.getElementById("history");
-
-if(history.length==0){
-h.innerHTML="📜 Chưa có lịch sử";
-return;
-}
-
-h.innerHTML="<b>📜 Lịch sử:</b>"+history.map(i=>`
-<div class="history-item">
-<span>${i.type}</span>
-<button class="rgb-btn" onclick="copy('${i.link}')">COPY</button>
-</div>
-`).join("");
-}
-
-function copy(t){
-navigator.clipboard.writeText(t);
-alert("Đã copy link");
-}
-
-function vip(){
-let k=document.getElementById("vip").value.trim();
-let obj=KEY_DATA.personal_keys?.find(x=>x.key.trim()===k);
-
-if(!obj) return err("❌ Key VIP sai");
-
-let link=CONFIG.scripts?.[(obj.platform||"android")+"_full"];
-
-save("💎 VIP",link);
-ok("✔ VIP kích hoạt thành công");
-}
-
-function freeKey(){
-let k=document.getElementById("free").value.trim();
-
-if(!KEY_DATA.community_keys?.includes(k))
-return err("❌ Key FREE sai");
-
-let link=CONFIG.scripts?.android_free;
-
-save("🎁 FREE",link);
-ok("✔ Nhận FREE thành công");
-}
-
-function err(t){
-document.getElementById("result").innerHTML="<div class='error'>"+t+"</div>";
-}
-
-function ok(t){
-document.getElementById("result").innerHTML="<div class='success'>"+t+"</div>";
-}
-
-function clearHis(){
-history=[];
-localStorage.removeItem("his");
-render();
-}
-
-function toggle(){
-document.getElementById("menu").classList.toggle("show");
-}
-
-load();
-render();
-
-</script>
-
-</body>
-</html>
+[Proxy]
+72.37.216.68:4145
+20.210.39.153:8561
+48.210.225.96:80
+190.119.132.61:80
+4.213.98.253:80
+52.229.30.3:80
+61.158.175.38:9002
+1.231.81.166:3129
+222.213.85.99:9002
+8.219.97.248:80
+q47.56.110.204:8989
+51.141.175.118:80
+193.233.22.29:10818
+98.178.72.21:10919
+142.93.202.130:3129
+46.98.185.160:5678
+20.27.14.220:8561
+45.136.198.40:3129
+143.42.66.91:80
+115.231.37.249:12826
+103.163.111.56:1111
+158.160.215.167:8126
+196.251.223.29:8104
+40.89.145.14:80
+45.167.124.52:8080
+175.194.173.105:3129
+57.128.188.167:9157
+164.138.205.206:8080
+35.225.22.61:80
+150.107.140.238:3129
+113.11.126.150:30226
+167.103.31.122:8800
+210.223.44.230:3129
+181.115.65.194:999
+113.160.115.254:8080
+12.50.107.222:80
+36.138.53.26:10017
+167.103.144.127:8800
+59.46.216.131:30001
+58.241.88.13:800
+5.104.87.17:8051
+123.30.154.171:7777
+103.152.140.182:8090
+167.103.115.102:8800
+102.0.17.74:8080
+187.102.211.253:999
+38.123.220.173:999
+8.212.177.126:8080
+103.192.174.146:8080
+12.50.107.220:80
+183.215.23.242:9091
+188.239.43.6:80
+89.116.88.19:80
+119.92.71.40:8080
+65.21.201.149:8080
+190.97.231.0:999
+38.156.23.225:999
+141.98.153.86:80
+16.78.119.130:443
+86.53.183.16:1081
+12.50.107.219:80
+187.94.16.59:39665
+120.50.11.225:5555
+163.5.128.33:14270
+102.223.9.53:80
+5.129.233.190:3129
+171.234.51.117:5102
+174.138.119.88:80
+58.216.109.8:800
+102.68.77.47:8080
+219.93.101.62:80
+147.161.210.140:8800
+158.160.215.167:8127
+109.111.166.40:8080
+8.213.151.128:3129
+158.172.153.36:999
+58.216.109.7:800
+92.180.22.224:8081
+221.231.13.198:1081
+183.162.197.197:8060
+58.241.88.8:800
+167.71.196.28:8080
+212.108.115.74:8080
+72.195.114.169:4145
+168.81.129.105:3129
+51.16.49.112:10810
+167.103.34.108:8800
+103.213.97.78:80
+103.151.20.131:80
+4.213.167.178:80
+202.140.62.212:8080
+20.78.118.91:8561
+58.241.88.7:800
+192.73.244.36:80
+177.234.217.236:999
+47.56.110.204:8990
+113.204.79.230:9091
+107.174.231.218:8888
+160.20.38.102:8080
+103.109.213.134:4949
+46.17.47.48:80
+167.250.141.73:8080
+182.253.110.130:8080
+158.160.215.167:8125
+203.205.49.2:10186
+141.253.118.174:80
+103.165.157.154:3125
+45.177.178.23:999
+172.200.72.48:80
+116.80.65.82:3172
+103.120.222.21:8083
+120.92.212.16:7890
+119.93.170.95:8085
+184.178.172.3:4145
+185.200.38.221:8085
+113.192.30.43:8090
+193.43.159.200:80
+177.234.199.88:999
+34.44.49.215:80
+58.216.109.13:800
+172.193.178.226:80
+47.91.65.23:3129
+106.75.15.167:7890
+137.220.150.170:6005
+159.65.230.46:8888
+193.43.159.163:8080
+97.74.87.226:80
+45.140.147.155:1082
+20.78.26.206:8561
+47.89.184.18:3129
+188.129.255.58:8080
+103.158.121.245:7777
+203.19.38.114:1081
+103.156.15.210:1111
+74.176.195.135:80
+186.226.167.191:3129
+58.241.88.17:800
+103.129.175.43:8080
+72.195.34.35:27360
+178.212.144.7:80
+180.191.34.229:8081
+20.27.15.111:8561
+76.81.6.107:31008
+133.18.234.13:80
+207.180.254.198:8080
+203.205.33.131:1452
+192.252.220.89:4145
+101.51.144.214:8080
+190.102.246.94:999
+8.209.255.13:3129
+38.49.135.30:999
+38.252.217.32:999
+202.183.236.220:8080
+153.0.171.163:8085
+103.71.105.252:9090
+120.77.125.172:7777
+46.8.111.18:5501
+138.59.177.117:5678
+103.56.206.67:4000
+98.170.57.231:4145
+115.77.26.88:5102
+202.83.173.10:8080
+103.109.2.94:4153
+52.174.32.65:3129
+171.248.212.191:1081
+102.64.116.1:4145
+103.114.106.229:5663
+190.97.236.155:999
+41.223.234.116:37259
+89.58.45.94:44950
+160.251.96.109:20457
+67.201.59.70:4145
+202.84.76.190:5678
+212.83.138.186:31733
+85.17.107.85:2317
+95.216.25.222:13232
+168.119.251.219:8080
+3.70.46.172:289
+216.221.205.72:8888
+8.213.129.2:800
+8.130.34.44:9080
+103.204.54.50:1081
+164.155.79.189:1081
+8.130.34.237:9001
+67.43.228.250:14355
+206.206.71.220:5860
+103.10.214.81:9090
+198.8.94.170:4145
+38.210.179.30:999
+104.208.232.183:80
+181.166.94.18:8080
+192.53.126.207:10619
+142.54.231.38:4145
+192.252.214.20:15864
+45.41.173.21:6388
+222.73.39.163:80
+192.111.137.35:4145
+45.190.87.241:999
+211.78.62.78:80
+166.135.111.12:8080
+172.245.233.138:1081
+142.54.236.97:4145
+39.24.211.163:11579
+181.204.4.74:5678
+121.139.218.165:43295
+162.241.53.72:45925
+152.53.168.53:22845
+13.218.86.1:53983
+142.54.237.34:4145
+65.49.2.84:38418
+67.43.236.20:28245
+174.64.199.79:4145
+106.111.141.254:38801
+142.50.59.229:1081
+128.199.221.91:33564
+192.111.137.37:18762
+92.42.8.22:4153
+136.226.233.21:10010
+152.53.171.242:12238
+109.195.187.178:52207
+172.67.121.67:80
+103.86.155.78:1081
+162.253.68.97:4145
+104.200.152.30:4145
+103.165.64.86:4153
+195.2.84.34:2539
+192.111.135.18:18301
+190.11.198.89:4153
+162.241.45.22:55953
+72.10.164.178:26573
+94.228.252.69:3129
+93.190.142.8:11789
+103.105.55.76:3125
+120.240.29.174:22222
+212.193.78.243:8081
+103.82.20.0:22
+120.232.242.124:22222
+185.93.89.164:21268
+142.54.226.214:4145
+13.246.191.160:45418
+200.215.229.33:999
+82.200.215.136:3129
+45.6.95.66:4153
+64.235.35.40:50100
+193.227.129.215:35519
+118.17.200.112:48184
+72.10.160.171:21943
+104.37.135.145:4145
+193.233.85.149:3129
+5.254.41.71:3129
+181.119.111.239:999
+72.10.160.173:20185
+38.60.196.214:80
+152.26.229.52:9443
+117.159.239.49:22222
+154.37.208.132:30000
+120.198.141.84:22222
+185.135.69.34:80
+51.79.135.131:8080
+120.240.29.51:22222
+177.234.217.82:999
+120.232.242.119:22222
+113.59.32.160:22222
+223.25.110.216:3125
+77.235.31.24:8080
+103.86.117.82:8080
+113.59.32.162:22222
+183.239.109.98:22222
+117.159.239.57:22222
+120.240.35.173:22222
+120.238.159.230:22222
+223.113.134.57:22222
+120.238.159.228:22222
+183.249.5.109:22222
+120.238.159.229:22222
+117.159.239.55:22222
+219.65.73.81:80
+43.246.227.57:8080
+145.220.178.15:8118
+196.70.91.2:3129
+36.90.231.170:3129
+103.178.3.0:8080
+41.220.16.213:80
+101.255.53.105:8080
+101.255.76.66:8080
+87.10.214.128:3129
+223.113.134.104:22222
+183.249.5.117:22222
+185.221.196.71:8888
+171.229.223.92:10007
+117.0.193.252:10010
+59.153.18.93:20909
+157.20.128.210:7777
+1.54.180.239:10005
+1.54.180.239:10004
+42.116.166.55:10010
+38.191.204.146:999
+191.252.204.220:8080
+103.217.216.40:8080
+103.53.77.38:8080
+222.184.48.251:22222
+223.113.134.102:22222
+171.41.130.189:2324
+85.214.204.79:80
+104.129.202.127:10810
+104.129.202.127:12354
+202.5.36.147:8090
+197.221.249.198:80
+123.200.26.134:4126
+168.194.64.219:3129
+104.129.203.245:10733
+104.129.203.245:10139
+104.129.203.245:10026
+176.126.164.213:80
+112.93.118.61:3129
+185.18.250.181:80
+159.112.235.64:80
+185.176.24.253:80
+185.18.250.83:80
+185.18.250.232:80
+104.16.0.104:80
+160.123.255.71:80
+173.245.49.150:80
+173.245.49.101:80
+173.245.49.10:80
+173.245.49.64:80
+123.200.17.138:96
+221.231.24.154:1031
+45.190.78.20:999
+114.111.151.41:80
+139.162.200.213:80
+157.20.74.241:48831
+120.237.27.34:22222
+95.173.218.73:8082
+95.173.218.69:8082
+223.113.134.98:22222
+120.240.35.165:22222
+103.155.64.131:8080
+176.118.238.194:1081
+202.5.37.120:21225
+95.173.218.72:8082
+103.130.197.36:80
+95.173.218.74:8082
+103.253.43.144:80
+95.173.218.67:8081
+50.210.166.34:80
+124.108.6.20:8085
+160.22.197.119:8080
+43.230.211.244:8080
+103.31.133.102:8080
+103.227.186.217:6080
+8.213.222.247:8080
+173.245.49.121:80
+173.245.49.231:80
+173.245.49.50:80
+173.245.49.69:80
+173.245.49.42:80
+38.10.129.181:999
+187.86.59.122:80
+172.67.70.35:80
+104.16.0.201:80
+103.139.138.121:8080
+103.253.127.154:8099
+109.224.242.13:8085
+173.245.49.199:80
+173.245.49.169:80
+173.245.49.173:80
+173.245.49.185:80
+173.245.49.222:80
+173.245.49.43:80
+173.245.49.102:80
+173.245.49.116:80
+173.245.49.86:80
+173.245.49.112:80
+173.245.49.225:80
+173.245.49.161:80
+173.245.49.119:80
+173.245.49.66:80
+173.245.49.163:80
+173.245.49.219:80
+173.245.49.229:80
+173.245.49.242:80
+173.245.49.85:80
+45.158.10.135:8080
+113.11.64.137:9107
+47.250.51.110:8081
+95.173.218.78:8082
+95.173.218.71:8081
+95.173.218.66:8082
+172.237.80.233:8080
+95.173.218.76:8081
+95.173.218.80:8082
+95.173.218.76:8082
+95.173.218.79:8081
+173.181.142.228:80
+202.191.121.99:10521
+213.142.156.97:80
+103.148.131.87:8080
+173.245.49.160:80
+173.245.49.105:80
+173.245.49.122:80
+173.245.49.91:80
+173.245.49.16:80
+173.245.49.48:80
+173.245.49.232:80
+173.245.49.26:80
+173.245.49.137:80
+194.48.198.135:7070
+190.90.100.195:999
+144.48.163.126:8080
+45.65.138.48:999
+202.4.125.221:9999
+58.147.186.214:3125
+117.58.242.231:36514
+31.25.92.114:8080
+164.70.91.226:3172
+202.5.56.59:2727
+202.57.25.134:8080
+202.5.56.141:2727
+202.5.56.151:2727
+103.76.108.89:8080
+204.199.140.20:999
+103.126.87.203:8088
+202.5.57.39:2727
+168.195.214.41:8800
+43.224.118.206:8989
+43.252.237.107:8090
+41.204.8.1:8246
+45.189.252.245:999
+160.25.8.17:11011
+123.141.181.73:5031
+103.65.237.92:5678
+102.23.239.2:8080
+118.113.247.70:1081
+103.211.26.94:80
+134.209.229.237:3131
+36.83.142.76:8081
+165.225.113.220:10679
+165.225.113.220:11462
+165.225.113.220:11233
+117.86.6.27:1081
+36.138.53.26:10019
+103.203.232.96:8080
+102.68.129.54:8080
+49.87.152.71:1081
+1.54.172.229:16000
+1.52.198.221:16000
+1.52.198.150:16000
+73.31.173.80:8888
+165.225.113.220:10958
